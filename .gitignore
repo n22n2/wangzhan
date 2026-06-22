@@ -30,5 +30,3 @@ Thumbs.db
 .env.local
 .env.*.local
 
-# 视频文件（体积过大，不上传 GitHub）
-public/*.mp4
