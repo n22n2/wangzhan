@@ -41,6 +41,8 @@
   --mx: 50%;                 /* JS 设置的鼠标 X 坐标 */
   --my: 50%;                 /* JS 设置的鼠标 Y 坐标 */
   --spotlight-opacity: 0;    /* 背景光斑透明度（预留） */
+  --scroll-progress: 0;      /* 滚动进度 0~1（JS 设置） */
+  --scroll-y: 0px;           /* 当前滚动距离（JS 设置） */
 }
 
 * {
@@ -97,47 +99,257 @@ body::before {
   position: fixed;
   top: 0;
   left: 0;
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
   background: var(--accent-2);
   border-radius: 50%;
   pointer-events: none;
   z-index: 9999;
   transform: translate(-50%, -50%);
   mix-blend-mode: difference;
-  transition: width 0.3s var(--ease), height 0.3s var(--ease), background 0.3s var(--ease);
-  box-shadow: 0 0 16px 2px rgba(124, 240, 210, 0.4);
+  transition: width 0.2s var(--ease), height 0.2s var(--ease), background 0.2s var(--ease), opacity 0.2s var(--ease);
+  box-shadow: 0 0 12px 2px rgba(124, 240, 210, 0.6), 0 0 24px 4px rgba(124, 240, 210, 0.2);
 }
 
 .cursor-ring {
   position: fixed;
   top: 0;
   left: 0;
-  width: 36px;
-  height: 36px;
-  border: 1px solid rgba(233, 236, 242, 0.35);
+  width: 32px;
+  height: 32px;
+  border: 1px solid rgba(233, 236, 242, 0.4);
   border-radius: 50%;
   pointer-events: none;
   z-index: 9998;
   transform: translate(-50%, -50%);
-  transition: width 0.35s var(--ease), height 0.35s var(--ease),
-              border-color 0.3s var(--ease), background 0.3s var(--ease);
+  transition: width 0.25s var(--ease), height 0.25s var(--ease),
+              border-color 0.2s var(--ease), background 0.2s var(--ease),
+              opacity 0.2s var(--ease);
+  box-shadow: 0 0 0 1px rgba(124, 240, 210, 0.1);
 }
 
+/* hover 可交互元素时光标变大 */
 .cursor-hover .cursor-ring {
-  width: 64px;
-  height: 64px;
+  width: 72px;
+  height: 72px;
   border-color: var(--accent-2);
-  background: rgba(124, 240, 210, 0.06);
+  background: rgba(124, 240, 210, 0.08);
+  box-shadow: 0 0 20px 2px rgba(124, 240, 210, 0.3);
 }
 
 .cursor-hover .cursor-dot {
   width: 4px;
   height: 4px;
+  background: #fff;
+  box-shadow: 0 0 8px 1px rgba(255, 255, 255, 0.8);
+}
+
+/* 鼠标按下时：圆环缩小并加深 */
+.cursor-active .cursor-ring {
+  width: 24px;
+  height: 24px;
+  border-color: var(--accent-2);
+  background: rgba(124, 240, 210, 0.25);
+}
+
+.cursor-active.cursor-hover .cursor-ring {
+  width: 52px;
+  height: 52px;
+  background: rgba(124, 240, 210, 0.35);
+}
+
+/* 鼠标离开窗口时隐藏光标 */
+body:not(:hover) .cursor-dot,
+body:not(:hover) .cursor-ring {
+  opacity: 0;
 }
 
 @media (max-width: 768px) {
   .cursor-dot, .cursor-ring { display: none; }
+}
+
+/* === 进入加载动画 === */
+.loader {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  background: var(--bg-0);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.6s cubic-bezier(0.76, 0, 0.24, 1);
+}
+
+/* 退出：整体向上滑走 */
+.loader--leave {
+  transform: translateY(-100%);
+}
+
+/* 流动光球：三个缓慢漂移的径向渐变色晕 */
+.loader-orb {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  filter: blur(80px);
+  opacity: 0;
+  animation: orbFadeIn 1.2s ease forwards;
+}
+
+.loader-orb-1 {
+  width: 55vw;
+  height: 55vw;
+  top: -15%;
+  left: -10%;
+  background: radial-gradient(circle, rgba(124, 240, 210, 0.18) 0%, transparent 70%);
+  animation: orbFadeIn 1.2s ease 0.1s forwards, orbDrift1 9s ease-in-out 1.2s infinite alternate;
+}
+
+.loader-orb-2 {
+  width: 45vw;
+  height: 45vw;
+  bottom: -10%;
+  right: -8%;
+  background: radial-gradient(circle, rgba(182, 212, 255, 0.16) 0%, transparent 70%);
+  animation: orbFadeIn 1.2s ease 0.3s forwards, orbDrift2 11s ease-in-out 1.2s infinite alternate;
+}
+
+.loader-orb-3 {
+  width: 30vw;
+  height: 30vw;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle, rgba(124, 240, 210, 0.08) 0%, transparent 65%);
+  animation: orbFadeIn 1.2s ease 0.5s forwards, orbDrift3 13s ease-in-out 1.2s infinite alternate;
+}
+
+@keyframes orbFadeIn {
+  to { opacity: 1; }
+}
+
+@keyframes orbDrift1 {
+  0%   { transform: translate(0, 0)    scale(1); }
+  50%  { transform: translate(6%, 8%)  scale(1.06); }
+  100% { transform: translate(3%, 14%) scale(0.97); }
+}
+
+@keyframes orbDrift2 {
+  0%   { transform: translate(0, 0)      scale(1); }
+  50%  { transform: translate(-8%, -5%)  scale(1.08); }
+  100% { transform: translate(-4%, -12%) scale(0.95); }
+}
+
+@keyframes orbDrift3 {
+  0%   { transform: translate(-50%, -50%) scale(1); }
+  50%  { transform: translate(-46%, -54%) scale(1.12); }
+  100% { transform: translate(-52%, -47%) scale(0.92); }
+}
+
+/* 细网格纹理 */
+.loader-grid {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(124, 240, 210, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(124, 240, 210, 0.03) 1px, transparent 1px);
+  background-size: 60px 60px;
+  mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 30%, transparent 100%);
+}
+
+/* 噪点纹理 */
+.loader-noise {
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  background-size: 200px;
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+/* 中心文字区 */
+.loader-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+/* 副标题 */
+.loader-role {
+  font-size: 11px;
+  letter-spacing: 0.4em;
+  text-transform: uppercase;
+  color: var(--accent-2);
+  opacity: 0;
+  transform: translateY(8px);
+  animation: loaderFadeUp 0.6s var(--ease) 0.3s forwards;
+}
+
+/* 主标题 */
+.loader-name {
+  font-size: clamp(56px, 10vw, 96px);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: var(--text-1);
+  opacity: 0;
+  transform: translateY(20px);
+  animation: loaderFadeUp 0.8s var(--ease) 0.1s forwards;
+}
+
+@keyframes loaderFadeUp {
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* 底部进度线容器 */
+.loader-bar-wrap {
+  position: absolute;
+  bottom: 56px;
+  left: 48px;
+  right: 48px;
+  height: 1px;
+  background: var(--line);
+}
+
+/* 填充线：宽度由 JS rAF 逐帧直接写 DOM，不加 CSS transition */
+.loader-bar {
+  height: 2px;
+  width: 0%;
+  background: linear-gradient(90deg, var(--accent-2), var(--accent));
+  box-shadow: 0 0 10px var(--accent-2), 0 0 24px rgba(124, 240, 210, 0.35);
+  border-radius: 2px;
+  margin-top: -0.5px; /* 居中对齐轨道 */
+}
+
+/* 百分比数字：固定在右上角，大号显示，使用主强调色 */
+.loader-bar-pct {
+  position: absolute;
+  right: 0;
+  top: -64px;
+  font-size: clamp(36px, 5vw, 48px);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  background: linear-gradient(135deg, var(--accent-2), var(--accent));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  line-height: 1;
+}
+
+/* === 顶部滚动进度条 === */
+.scroll-progress-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 2px;
+  width: calc(var(--scroll-progress) * 100%);
+  background: linear-gradient(90deg, var(--accent-2), var(--accent));
+  z-index: 10000;
+  pointer-events: none;
+  box-shadow: 0 0 8px rgba(124, 240, 210, 0.6);
 }
 
 a {
@@ -227,14 +439,26 @@ video {
 /* Reveal on scroll 基本动画 */
 .reveal {
   opacity: 0;
-  transform: translateY(24px);
-  transition: opacity 0.8s var(--ease), transform 0.8s var(--ease);
+  transform: translateY(36px) scale(0.97);
+  transition: opacity 0.9s var(--ease), transform 0.9s var(--ease);
 }
 
 .reveal.is-visible {
   opacity: 1;
-  transform: translateY(0);
+  transform: translateY(0) scale(1);
 }
+
+/* 项目卡片交错入场 */
+.projects-grid .project-card:nth-child(2) { transition-delay: 0.12s; }
+.projects-grid .project-card:nth-child(3) { transition-delay: 0.24s; }
+.projects-grid .project-card:nth-child(4) { transition-delay: 0.36s; }
+
+/* 能力卡片交错入场 */
+.advantages-grid .adv-card:nth-child(2) { transition-delay: 0.08s; }
+.advantages-grid .adv-card:nth-child(3) { transition-delay: 0.16s; }
+.advantages-grid .adv-card:nth-child(4) { transition-delay: 0.24s; }
+.advantages-grid .adv-card:nth-child(5) { transition-delay: 0.32s; }
+.advantages-grid .adv-card:nth-child(6) { transition-delay: 0.40s; }
 
 /* === 5. 导航栏（顶部固定，滚动后变为紧凑样式）=== */
 /* ===== Navbar ===== */
@@ -384,10 +608,10 @@ video {
   height: 100%;
   object-fit: cover;
   opacity: 0;
-  z-index: 0;
-  filter: saturate(0.7) contrast(1.15) brightness(0.72) hue-rotate(-5deg);
+  z-index: 1;          /* 高于 hero-fallback(z:0)，视频加载后盖住渐变兜底 */
+  filter: saturate(0.65) contrast(1.1) brightness(0.6) hue-rotate(-5deg);
   transform: scale(1.04);
-  transition: opacity 1.4s var(--ease), transform 18s linear;
+  transition: opacity 1.6s var(--ease), transform 20s linear;
 }
 
 .hero-video.is-loaded {
@@ -467,21 +691,21 @@ video {
   100% { transform: rotate(360deg) scale(1); }
 }
 
-/* 主光斑 — 跟随鼠标 */
+/* 主光斑 — 跟随鼠标（使用 hero 局部坐标，效果更精确） */
 .hero-spotlight {
   position: absolute;
   top: 0; left: 0; right: 0; bottom: 0;
   background: radial-gradient(
-    700px circle at var(--mx, 50%) var(--my, 50%),
-    rgba(124, 240, 210, 0.18),
-    rgba(124, 240, 210, 0.04) 30%,
-    transparent 60%
+    800px circle at var(--hx, 50%) var(--hy, 50%),
+    rgba(124, 240, 210, 0.25),
+    rgba(124, 240, 210, 0.08) 30%,
+    transparent 65%
   );
   z-index: 1;
   pointer-events: none;
   opacity: 0;
-  transition: opacity 0.6s var(--ease);
-  filter: blur(20px);
+  transition: opacity 0.5s var(--ease);
+  filter: blur(24px);
 }
 
 .hero:hover .hero-spotlight {
@@ -536,16 +760,15 @@ video {
   position: absolute;
   inset: 0;
   background-image:
-    linear-gradient(to right, rgba(124, 240, 210, 0.04) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(124, 240, 210, 0.04) 1px, transparent 1px);
+    linear-gradient(to right, rgba(124, 240, 210, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(124, 240, 210, 0.05) 1px, transparent 1px);
   background-size: 80px 80px;
   background-position:
-    calc(50% + var(--px, 0)) calc(50% + var(--py, 0));
-  mask-image: radial-gradient(ellipse at center, black 30%, transparent 75%);
-  -webkit-mask-image: radial-gradient(ellipse at center, black 30%, transparent 75%);
-  z-index: 1;
+    calc(50% + var(--gx, 0px)) calc(50% + var(--gy, 0px));
   pointer-events: none;
-  transition: background-position 0.4s var(--ease);
+  z-index: 1;
+  mask-image: radial-gradient(ellipse at center, black 30%, transparent 80%);
+  -webkit-mask-image: radial-gradient(ellipse at center, black 30%, transparent 80%);
 }
 
 .hero-overlay {
@@ -561,6 +784,33 @@ video {
   position: relative;
   z-index: 2;
   padding-top: 80px;
+  transform: translateY(calc(var(--scroll-y, 0px) * -0.12));
+  will-change: transform;
+}
+
+/* hero 内容区 — 鼠标悬停时的光斑效果 */
+.hero-content::before {
+  content: "";
+  position: absolute;
+  width: 400px;
+  height: 400px;
+  left: var(--hx, 50%);
+  top: var(--hy, 50%);
+  transform: translate(-50%, -50%);
+  background: radial-gradient(
+    circle,
+    rgba(124, 240, 210, 0.15) 0%,
+    transparent 70%
+  );
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.4s var(--ease);
+  filter: blur(20px);
+  z-index: -1;
+}
+
+.hero:hover .hero-content::before {
+  opacity: 1;
 }
 
 .hero-meta {
@@ -641,7 +891,7 @@ video {
 .vfx-title {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'SF Pro Display', Helvetica, Arial, sans-serif;
   font-weight: 800;
-  font-size: clamp(80px, 18vw, 280px);
+  font-size: clamp(48px, 10vw, 160px);
   letter-spacing: -0.08em;
   line-height: 0.9;
   background: linear-gradient(180deg, #ffffff 0%, #7cf0d2 60%, #4a8a78 100%);
@@ -1503,7 +1753,7 @@ a.contact-item-value:hover {
 .adv-card {
   padding: 56px 40px;
   background: var(--bg-1);
-  transition: background 0.5s var(--ease);
+  transition: background 0.5s var(--ease), transform 0.4s var(--ease);
   position: relative;
   overflow: hidden;
   cursor: none;
@@ -1526,7 +1776,7 @@ a.contact-item-value:hover {
   position: absolute;
   inset: 0;
   background: radial-gradient(circle at var(--ax, 50%) var(--ay, 50%),
-    rgba(124, 240, 210, 0.1), transparent 55%);
+    rgba(124, 240, 210, 0.18), transparent 60%);
   opacity: 0;
   transition: opacity 0.4s var(--ease);
   pointer-events: none;
@@ -1538,6 +1788,7 @@ a.contact-item-value:hover {
 
 .adv-card:hover {
   background: linear-gradient(180deg, #0f1217 0%, #0b0d12 100%);
+  transform: translateY(-2px);
 }
 
 .adv-card:hover::after {
@@ -1559,24 +1810,22 @@ a.contact-item-value:hover {
 }
 
 .adv-icon {
-  width: 48px;
-  height: 48px;
-  border: 1px solid var(--line-strong);
-  border-radius: 4px;
+  width: auto;
+  height: 130px;
+  min-width: 60px;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   margin-bottom: 32px;
   font-size: 20px;
   color: var(--accent-2);
   position: relative;
   z-index: 1;
-  transition: transform 0.4s var(--ease), border-color 0.4s var(--ease);
+  transition: transform 0.4s var(--ease);
 }
 
 .adv-card:hover .adv-icon {
   transform: scale(1.08) rotate(-6deg);
-  border-color: var(--accent-2);
 }
 
 .adv-title {
@@ -1676,10 +1925,10 @@ a.contact-item-value:hover {
 }
 
 .contact-title {
-  font-size: clamp(56px, 8vw, 140px);
+  font-size: clamp(36px, 5vw, 80px);
   font-weight: 500;
   letter-spacing: -0.04em;
-  line-height: 0.95;
+  line-height: 1.15;
   margin-bottom: 80px;
   background: linear-gradient(180deg, #ffffff 0%, #7c808a 100%);
   -webkit-background-clip: text;
@@ -1752,7 +2001,7 @@ a.contact-item-value:hover {
   align-items: center;
   padding: 18px 0;
   border-bottom: 1px solid var(--line);
-  font-size: 15px;
+  font-size: 20px;
   color: var(--text-2);
   transition: color 0.3s var(--ease), padding 0.3s var(--ease),
               border-color 0.3s var(--ease);
@@ -1781,7 +2030,7 @@ a.contact-item-value:hover {
 }
 
 .social-platform {
-  font-size: 11px;
+  font-size: 16px;
   letter-spacing: 0.25em;
   text-transform: uppercase;
   color: var(--text-3);
@@ -2030,6 +2279,63 @@ a.contact-item-value:hover {
   margin: 0;
 }
 
+/* === 12. 语言切换按钮（中英文切换） === */
+/* ===== Language Switch ===== */
+.lang-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.3s var(--ease);
+  font-size: 12px;
+  letter-spacing: 0.15em;
+  z-index: 3;
+}
+
+.lang-switch:hover {
+  background: rgba(124, 240, 210, 0.08);
+  border-color: rgba(124, 240, 210, 0.4);
+  color: var(--accent-2);
+}
+
+.lang-switch::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at var(--rx, 50%) var(--ry, 50%),
+    rgba(124, 240, 210, 0.18), transparent 60%);
+  opacity: 0;
+  border-radius: 999px;
+  transition: opacity 0.3s var(--ease);
+  pointer-events: none;
+}
+
+.lang-switch:hover::before {
+  opacity: 1;
+}
+
+.lang-opt {
+  color: var(--text-3);
+  padding: 2px 4px;
+  transition: color 0.3s var(--ease);
+  position: relative;
+}
+
+.lang-opt.active {
+  color: var(--accent-2);
+  font-weight: 500;
+}
+
+.lang-sep {
+  color: var(--line-strong);
+  font-size: 10px;
+}
+
 /* ===== Responsive ===== */
 @media (max-width: 1200px) {
   .profile { grid-template-columns: 300px 1fr; gap: 48px; }
@@ -2055,4 +2361,52 @@ a.contact-item-value:hover {
   .hero-footer { flex-direction: column; gap: 20px; align-items: flex-start; }
   .modal-actions { flex-direction: column; }
   .modal-btn { justify-content: center; width: 100%; }
+  .lang-switch { padding: 5px 10px; font-size: 11px; }
+  .physics-container { height: 400px; }
+}
+
+/* ─────────────────────────────────────────────────
+   物理互动场景 — PhysicsPlayground
+   容器作为物理边界，标签为可拖拽的刚体
+───────────────────────────────────────────────── */
+
+/* 章节整体：底部去掉 padding，让容器顶到边 */
+.physics-section {
+  padding-bottom: 0;
+}
+
+/* 物理场景容器：固定高度，overflow:hidden 充当边界墙的视觉裁剪 */
+.physics-container {
+  position: relative;      /* 作为标签 position:absolute 的定位基准 */
+  width: 100%;
+  height: 520px;
+  overflow: hidden;        /* 超出容器的刚体不可见 */
+  margin-top: 48px;
+  border-top: 1px solid var(--line); /* 与上方章节的视觉分隔线 */
+}
+
+/* 物理标签：真实 DOM 元素，由物理引擎驱动 transform */
+.physics-tag {
+  position: absolute;      /* 脱离文档流，坐标由 JS transform 控制 */
+  top: 0;
+  left: 0;
+  padding: 12px 28px;
+  border: 1px solid var(--line-strong);
+  border-radius: 4px;
+  font-size: 18px;
+  letter-spacing: 0.06em;
+  color: var(--text-2);
+  background: var(--surface-2);
+  white-space: nowrap;     /* 禁止换行，保持刚体与 DOM 尺寸一致 */
+  user-select: none;       /* 拖拽时不选中文字 */
+  cursor: grab;
+  will-change: transform;  /* 提示浏览器开启 GPU 加速 */
+  opacity: 0;              /* 初始隐藏，物理初始化完成后由 JS 设为 1 */
+  transition: border-color 0.2s, color 0.2s, opacity 0.3s;
+}
+
+/* 悬停高亮 */
+.physics-tag:hover {
+  border-color: var(--accent-2);
+  color: var(--text-1);
 }

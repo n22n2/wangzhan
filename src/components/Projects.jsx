@@ -1,120 +1,68 @@
 /*
  * ─────────────────────────────────────────────────
- *  Projects 组件 — 精选项目列表
- *  结构：顶部标题 → 4 个项目卡片（左图右文）→ 点击视频项目会弹出视频播放弹窗
- *  组件构成：
- *    1) projects 数组   —— 项目数据（标题/描述/视频等）
- *    2) ProjectThumb     —— 卡片内的视频缩略图（静音自动循环）
- *    3) VideoModal       —— 点击视频后弹出的大屏播放器
- *    4) Projects         —— 主组件（渲染卡片 + 控制弹窗开关）
- *  修改提示：
- *    - 新增项目：在 projects 数组中添加一个 { no, tag, title, desc, video, cls } 对象
- *    - 替换为图片：将 video: "/xxx.mp4" 改为 video: null，并修改 project-placeholder 样式
- *    - 视频文件：放在项目根目录（与 index.html 同级），路径写为 "/文件名.mp4"
+ *  Projects — 精选作品区
+ *  结构：章节标题 → 4 张项目卡片（左图右文）→ 点击视频弹出播放器
+ *
+ *  子组件：
+ *    ProjectThumb  — 卡片内静音循环的视频缩略图
+ *    VideoModal    — 全屏视频播放弹窗
+ *
+ *  新增项目：在 videoSources 末尾加视频路径（或 null），
+ *            并在 App.jsx translations.projects.items 中添加对应条目
  * ─────────────────────────────────────────────────
  */
 
 import { useRef, useEffect, useState } from 'react'
 
-/* ========== 项目数据：修改/扩展这里即可 ========== */
-/* 每条项目包含：
-   no    — 项目编号（如 "01"）
-   tag   — 项目分类标签（如 "品牌影像 / 3D"）
-   title — 主标题
-   desc  — 详细描述
-   video — 视频路径（字符串 = 显示视频；null = 仅显示彩色占位）
-   cls   — 占位块的样式类（project-a ~ project-d，在 CSS 中定义不同颜色） */
-const projects = [
-  {
-    no: "01",
-    tag: "品牌影像 / 3D",
-    title: "极光 — 品牌视觉短片",
-    desc: "为某科技品牌制作的年度品牌影像，从概念设计到完整制作，聚焦光影质感与品牌气质的契合。",
-    video: "/hero-bg.mp4",   /* ← 视频路径：项目根目录下的文件 */
-    cls: "project-a"
-  },
-  {
-    no: "02",
-    tag: "产品广告 / 流体",
-    title: "液态流动 — 高端护肤广告",
-    desc: "高端护肤品类产品广告，以写实流体与光影表现产品的质感，完成产品与环境的整体氛围渲染。",
-    video: null,             /* ← null = 显示彩色占位块，不显示视频 */
-    cls: "project-b"
-  },
-  {
-    no: "03",
-    tag: "MV包装 / 霓虹",
-    title: "霓虹脉动 — 音乐 MV 视觉包装",
-    desc: "为独立音乐人 MV 提供完整视觉包装与动态影像，风格偏未来主义与赛博氛围。",
-    video: null,
-    cls: "project-c"
-  },
-  {
-    no: "04",
-    tag: "短片片头 / 合成",
-    title: "纸间世界 — 短片片头设计",
-    desc: "独立短片的片头设计与后期合成，构建统一视觉语言与氛围。",
-    video: null,
-    cls: "project-d"
-  }
-]
+/* 视频资源路径列表，顺序与 translations.projects.items 一一对应
+   null = 该项目暂无视频，卡片显示"查看案例"链接 */
+const videoSources = ['/火焰.mp4', '/紫色刀光.mp4']
 
 
 /* =======================================================================
- * 子组件 1：ProjectThumb — 卡片左侧的视频缩略图
- *  功能：在卡片内自动循环播放静音视频，hover 时显示"点击播放"
- *  参数：src=视频路径, onClick=点击时触发, title=鼠标悬停提示文字
+ *  ProjectThumb — 卡片左侧视频缩略图（静音自动循环）
+ *  props：
+ *    src     — 视频文件路径
+ *    onClick — 点击时的回调（打开弹窗）
+ *    title   — 项目标题，用于 hover tooltip
+ *    t       — 当前语言文案对象
  * ======================================================================= */
-function ProjectThumb({ src, onClick, title }) {
+function ProjectThumb({ src, onClick, title, t }) {
+  const videoRef = useRef(null) // 引用 <video> DOM 元素
 
-  /* 引用 video DOM 元素，用于在 JS 中控制播放 */
-  const videoRef = useRef(null)
-
-  /* 视频加载逻辑：4 种兜底方式确保视频能显示 */
+  /* 视频加载 + 播放逻辑：4 种兜底方式保证视频可见 */
   useEffect(() => {
     const video = videoRef.current
-    if (!video || !src) return   /* 无视频节点或无路径则退出 */
+    if (!video || !src) return // 无元素或无路径直接退出
 
-    /* 添加 "is-loaded" CSS 类，让视频从透明淡入 */
+    /* 添加 is-loaded 类，触发 CSS opacity 过渡（0 → 1 淡入）*/
     const reveal = () => {
-      if (video && !video.classList.contains('is-loaded')) {
-        video.classList.add('is-loaded')
-      }
+      if (!video.classList.contains('is-loaded')) video.classList.add('is-loaded')
     }
 
-    /* 方式 1：如果视频已缓存且加载完成（readyState >= 3）直接显示 */
-    if (video.readyState >= 3) reveal()
-    /* 方式 2：监听浏览器加载事件 */
-    video.addEventListener('loadeddata', reveal)
-    video.addEventListener('canplay', reveal)
-    video.addEventListener('playing', reveal)
-    /* 方式 3：手动触发 play()（绕过浏览器自动播放限制）*/
-    const p = video.play()
-    if (p && typeof p.then === 'function') {
-      p.then(() => reveal()).catch(() => reveal())
-    }
-    /* 方式 4：2 秒兜底（无论如何强制显示）*/
-    const fallback = setTimeout(reveal, 2000)
+    if (video.readyState >= 3) reveal()          // 已缓存：直接显示
+    video.addEventListener('loadeddata', reveal) // 数据加载完成
+    video.addEventListener('canplay',    reveal) // 可以播放
+    video.addEventListener('playing',    reveal) // 实际开始播放
 
-    /* 组件卸载时：清理监听器 + 定时器 */
+    const p = video.play() // 触发播放
+    if (p?.then) p.then(reveal).catch(reveal)    // Promise 兜底
+
+    const fallback = setTimeout(reveal, 2000)    // 2s 后强制显示
+
     return () => {
       video.removeEventListener('loadeddata', reveal)
-      video.removeEventListener('canplay', reveal)
-      video.removeEventListener('playing', reveal)
+      video.removeEventListener('canplay',    reveal)
+      video.removeEventListener('playing',    reveal)
       clearTimeout(fallback)
     }
-  }, [src])  /* src 变化时重新执行 */
+  }, [src]) // src 变化时重新执行
 
-  /* 渲染：外层可点击的盒子 + 视频 + hover 播放图标 */
   return (
-    <div className="project-thumb" onClick={onClick} title={`点击播放 · ${title}`}>
+    /* 外层容器：可点击，触发弹窗 */
+    <div className="project-thumb" onClick={onClick} title={`${t.projects.clickPlay} · ${title}`}>
 
-      {/* <video> 标签属性：
-          autoPlay   - 自动播放
-          muted      - 静音（浏览器要求自动播放必须静音）
-          loop       - 循环播放
-          playsInline - 在 iOS 内联播放（不强制全屏）
-          preload="auto" - 立即加载视频 */}
+      {/* 视频：静音 + 自动循环，is-loaded 类控制淡入 */}
       <video
         ref={videoRef}
         className="project-video"
@@ -127,10 +75,10 @@ function ProjectThumb({ src, onClick, title }) {
         <source src={src} type="video/mp4" />
       </video>
 
-      {/* hover 时显示的播放图标层 */}
+      {/* hover 覆盖层：显示播放图标 + 提示文字 */}
       <div className="project-play">
         <span className="play-icon">▶</span>
-        <span className="play-text">点击播放</span>
+        <span className="play-text">{t.projects.clickPlay}</span>
       </div>
     </div>
   )
@@ -138,110 +86,84 @@ function ProjectThumb({ src, onClick, title }) {
 
 
 /* =======================================================================
- * 子组件 2：VideoModal — 点击视频后弹出的全屏播放器
- *  参数：project=项目数据对象, onClose=关闭弹窗的回调函数
- *  功能：弹窗展示项目视频，支持浏览器原生控制（暂停/音量/全屏）
+ *  VideoModal — 全屏视频播放弹窗
+ *  props：
+ *    project — 当前项目数据（tag / title / desc / video）
+ *    onClose — 关闭弹窗的回调
+ *    t       — 当前语言文案对象
  * ======================================================================= */
-function VideoModal({ project, onClose }) {
+function VideoModal({ project, onClose, t }) {
+  const videoRef = useRef(null) // 引用弹窗内的 <video>
+  const modalRef = useRef(null) // 引用遮罩层（用于点击背景关闭）
 
-  const videoRef = useRef(null)     /* 引用视频元素 */
-  const modalRef = useRef(null)     /* 引用弹窗背景层 */
-  const [isPlaying, setIsPlaying] = useState(true)  /* 播放状态（暂未使用，保留扩展）*/
-
-  /* 打开弹窗后的逻辑：解锁音频 + 自动播放 + ESC 关闭 + 禁止页面滚动 */
+  /* 弹窗打开后：解锁音频、自动播放、绑定 ESC、锁定页面滚动 */
   useEffect(() => {
     const video = videoRef.current
     if (!video) return
 
-    /* 在弹窗中解锁音频（用户已点击触发，浏览器允许有声播放）*/
-    video.muted = false
-    video.controls = true
+    video.muted    = false // 弹窗内允许有声（用户主动点击，浏览器不拦截）
+    video.controls = true  // 显示原生控制条
 
-    /* 尝试播放；若被浏览器拦截则退回静音播放 */
-    const tryPlay = () => {
-      const p = video.play()
-      if (p && typeof p.then === 'function') {
-        p.then(() => setIsPlaying(true)).catch(() => {
-          /* 浏览器阻止自动播放，退回到静音再播放 */
-          video.muted = true
-          video.play().then(() => setIsPlaying(true)).catch(() => {})
-        })
-      }
+    /* 尝试有声播放；失败时退回静音播放 */
+    const p = video.play()
+    if (p?.then) {
+      p.catch(() => {
+        video.muted = true
+        video.play().catch(() => {})
+      })
     }
-    tryPlay()
 
-    /* 监听 ESC 键关闭弹窗 */
-    const onKey = (e) => {
-      if (e.key === 'Escape') onClose()
-    }
+    /* ESC 键关闭弹窗 */
+    const onKey = (e) => { if (e.key === 'Escape') onClose() }
     window.addEventListener('keydown', onKey)
 
-    /* 弹窗打开时：锁定页面滚动条，避免用户误操作滚动 */
+    /* 锁定页面滚动（避免背景内容意外滚动）*/
     document.body.style.overflow = 'hidden'
 
-    /* 组件卸载时：清理监听 + 恢复页面滚动 */
     return () => {
       window.removeEventListener('keydown', onKey)
-      document.body.style.overflow = ''
+      document.body.style.overflow = '' // 恢复滚动
     }
-  }, [])
+  }, [onClose])
 
-  /* 额外监听播放 / 暂停状态（预留扩展功能，如显示播放图标）*/
-  useEffect(() => {
-    const video = videoRef.current
-    if (!video) return
-    const onPlay = () => setIsPlaying(true)
-    const onPause = () => setIsPlaying(false)
-    video.addEventListener('play', onPlay)
-    video.addEventListener('pause', onPause)
-    return () => {
-      video.removeEventListener('play', onPlay)
-      video.removeEventListener('pause', onPause)
-    }
-  }, [])
-
-  /* 全屏按钮：调用浏览器原生全屏 API（兼容多浏览器前缀）*/
+  /* 全屏按钮：调用浏览器原生全屏 API（兼容 Safari / IE11）*/
   const handleFullscreen = () => {
     const video = videoRef.current
     if (!video) return
-    if (video.requestFullscreen) video.requestFullscreen()           /* 标准 */
-    else if (video.webkitRequestFullscreen) video.webkitRequestFullscreen() /* Safari */
-    else if (video.msRequestFullscreen) video.msRequestFullscreen()      /* IE11 */
+    if      (video.requestFullscreen)       video.requestFullscreen()
+    else if (video.webkitRequestFullscreen) video.webkitRequestFullscreen()
+    else if (video.msRequestFullscreen)     video.msRequestFullscreen()
   }
 
-  /* 点击遮罩（弹窗背景的灰色区域）时关闭 — 仅当点击的是背景本身才触发 */
+  /* 点击遮罩背景关闭（仅当 target 是遮罩本身，不是内部内容）*/
   const handleBackdropClick = (e) => {
     if (e.target === modalRef.current) onClose()
   }
 
   return (
-    /* 最外层：固定定位 + 全屏 + 背景半透明的遮罩 */
-    <div
-      className="modal-backdrop"
-      ref={modalRef}
-      onClick={handleBackdropClick}
-    >
-      {/* 弹窗内容容器 */}
+    /* 全屏遮罩层 */
+    <div className="modal-backdrop" ref={modalRef} onClick={handleBackdropClick}>
+
+      {/* 弹窗主体 */}
       <div className="modal-content">
 
-        {/* —— 顶部标题栏 —— */}
+        {/* 顶部：分类标签 + 标题 + 关闭按钮 */}
         <div className="modal-header">
           <div>
-            <span className="modal-tag">{project.tag}</span>  {/* 标签：品牌影像 / 3D */}
-            <h3 className="modal-title">{project.title}</h3>     {/* 标题：极光 — ... */}
+            <span className="modal-tag">{project.tag}</span>
+            <h3 className="modal-title">{project.title}</h3>
           </div>
-          {/* 关闭按钮 */}
-          <button className="modal-close" onClick={onClose} aria-label="关闭">
+          <button className="modal-close" onClick={onClose} aria-label={t.projects.modalClose}>
             ✕
           </button>
         </div>
 
-        {/* —— 视频播放区：16:9 比例 —— */}
+        {/* 视频播放区（16:9 比例）*/}
         <div className="modal-video-wrap">
           <video
             ref={videoRef}
             className="modal-video"
-            controls          /* 显示浏览器原生控制条（播放/暂停/音量/全屏）*/
+            controls
             autoPlay
             loop
             playsInline
@@ -251,17 +173,17 @@ function VideoModal({ project, onClose }) {
           </video>
         </div>
 
-        {/* —— 两个操作按钮：全屏播放 + 关闭 —— */}
+        {/* 操作按钮行：全屏 + 关闭 */}
         <div className="modal-actions">
-          <button className="modal-btn" onClick={handleFullscreen} data-spotlight data-cursor-hover>
-            <span>⛶</span> 全屏播放
+          <button className="modal-btn"           onClick={handleFullscreen} data-spotlight data-cursor-hover>
+            <span>⛶</span> {t.projects.modalFullscreen}
           </button>
-          <button className="modal-btn secondary" onClick={onClose} data-spotlight data-cursor-hover>
-            <span>✕</span> 关闭窗口
+          <button className="modal-btn secondary" onClick={onClose}          data-spotlight data-cursor-hover>
+            <span>✕</span> {t.projects.modalCloseWindow}
           </button>
         </div>
 
-        {/* —— 项目描述文字 —— */}
+        {/* 项目描述文字 */}
         <p className="modal-desc">{project.desc}</p>
       </div>
     </div>
@@ -270,87 +192,84 @@ function VideoModal({ project, onClose }) {
 
 
 /* =======================================================================
- * 主组件：Projects — 渲染 4 个项目卡片 + 控制视频弹窗
+ *  Projects — 主组件
  * ======================================================================= */
-export default function Projects() {
-
-  /* 状态：当前打开弹窗的项目。null = 无弹窗，设置某个项目 = 显示该项目弹窗 */
+export default function Projects({ t }) {
+  /* activeProject：当前弹窗展示的项目对象。null = 无弹窗 */
   const [activeProject, setActiveProject] = useState(null)
+
+  const projectItems = t.projects.items || [] // 从文案字典取项目列表
 
   return (
     <section className="section projects" id="work">
       <div className="container">
 
-        {/* 顶部标题区 */}
-        <div className="section-label reveal">02 — 作品</div>
-        <h2 className="section-title reveal">
-          精选项目 · 精心雕琢，而非模板化。
-        </h2>
-        <p className="section-desc reveal">
-          以下为近年来参与或独立完成的代表性作品。每一个项目都值得单独开一个章节。
-        </p>
+        {/* 章节小标签 + 大标题 */}
+        <div className="section-label reveal">{t.projects.label}</div>
+        <h2 className="section-title reveal">{t.projects.title}</h2>
 
-        {/* 项目卡片网格：使用 Array.map 将 projects 数组转为 JSX */}
+        {/* 项目卡片网格 */}
         <div className="projects-grid">
-          {projects.map((p, i) => (
-            /* article = 语义化的"文章/项目"容器
-               key = React 需要的唯一标识（用项目编号即可）
-               className = 添加 offset 让奇数项左右布局翻转（如 02 项图片在右） */
-            <article
-              key={p.no}
-              className={`project-card reveal${i % 2 === 1 ? ' offset' : ''}`}
-              data-spotlight
-            >
+          {projectItems.map((p, i) => {
+            const video = videoSources[i] // 对应索引的视频路径（可为 null）
 
-              {/* 左侧图片区：有视频则显示 ProjectThumb，否则显示占位色块 */}
-              <div className="project-image" data-spotlight>
-                {p.video ? (
-                  <ProjectThumb
-                    src={p.video}
-                    onClick={() => setActiveProject(p)}
-                    title={p.title}
-                  />
-                ) : (
-                  <div className={`project-placeholder ${p.cls}`}></div>
-                )}
-                {/* 叠在图片上的标签文字 */}
-                <span className="project-index">{p.tag}</span>
-                <span className="project-no">项目 N° {p.no} / 2024–2026</span>
-              </div>
+            return (
+              /* 偶数索引：图左文右；奇数加 offset 类：图右文左 */
+              <article
+                key={i}
+                className={`project-card reveal${i % 2 === 1 ? ' offset' : ''}`}
+                data-spotlight
+              >
+                {/* 左侧媒体区：有视频显示缩略图，否则显示纯色占位块 */}
+                <div className="project-image" data-spotlight>
+                  {video ? (
+                    <ProjectThumb
+                      src={video}
+                      onClick={() => setActiveProject({ ...p, video })} // 打开弹窗
+                      title={p.title}
+                      t={t}
+                    />
+                  ) : (
+                    <div className={`project-placeholder ${p.cls || ''}`} />
+                  )}
+                </div>
 
-              {/* 右侧描述区：标题 + 描述 + 链接 */}
-              <div className="project-info">
-                <h3 className="project-title">{p.title}</h3>
-                <p className="project-desc">{p.desc}</p>
-                {/* 有视频的项目显示"点击查看视频"链接（点击打开弹窗）*/}
-                {p.video ? (
-                  <a
-                    href="#"
-                    className="project-link"
-                    onClick={(e) => {
-                      e.preventDefault()      /* 阻止链接的默认跳转 */
-                      setActiveProject(p)    /* 将该项目设为激活项 → 打开弹窗 */
-                    }}
-                    data-cursor-hover
-                  >
-                    点击查看视频 →
-                  </a>
-                ) : (
-                  <a href="#" className="project-link" data-cursor-hover>
-                    查看案例 →
-                  </a>
-                )}
-              </div>
-            </article>
-          ))}
+                {/* 右侧文字区：标题 + 描述 + 链接 */}
+                <div className="project-info">
+                  <h3 className="project-title">{p.title}</h3>
+                  <p  className="project-desc">{p.desc}</p>
+
+                  {/* 有视频 → 点击打开弹窗；无视频 → 普通外链 */}
+                  {video ? (
+                    <a
+                      href="#"
+                      className="project-link"
+                      onClick={(e) => {
+                        e.preventDefault()               // 阻止默认跳转
+                        setActiveProject({ ...p, video }) // 设置激活项，触发弹窗渲染
+                      }}
+                      data-cursor-hover
+                    >
+                      {t.projects.clickToViewVideo}
+                    </a>
+                  ) : (
+                    <a href="#" className="project-link" data-cursor-hover>
+                      {t.projects.viewCase}
+                    </a>
+                  )}
+                </div>
+              </article>
+            )
+          })}
         </div>
       </div>
 
-      {/* —— 条件渲染：只有当 activeProject 不为 null 时才渲染弹窗 —— */}
+      {/* 视频弹窗：仅当 activeProject 非 null 时渲染，关闭后自动卸载 */}
       {activeProject && (
         <VideoModal
           project={activeProject}
-          onClose={() => setActiveProject(null)}  /* 关闭时将激活项设为 null → 销毁弹窗 */
+          onClose={() => setActiveProject(null)}
+          t={t}
         />
       )}
     </section>

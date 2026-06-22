@@ -10,7 +10,7 @@
  * ─────────────────────────────────────────────────
  */
 
-export default function About() {
+export default function About({ t }) {
   return (
     /* —— 主容器：section 标签定义了本区块的背景色与边距 ——
        className="section"  继承全站通用的章节样式
@@ -22,12 +22,12 @@ export default function About() {
 
         {/* —— 章节小标签：显示 "01 — 关于" 上方小字 —— */}
         {/* reveal 类：滚动到视口时触发淡入动画 */}
-        <div className="section-label reveal">01 — 关于</div>
+        <div className="section-label reveal">{t.about.label}</div>
 
         {/* —— 大标题：本区块的引导语 —— */}
         {/* 修改这段文字可改变关于页的主标题 */}
         <h2 className="section-title reveal">
-          以视觉为媒介，探索真实与想象之间的张力。
+          {t.about.title}
         </h2>
 
         {/* ========== 区块 1：个人资料（头像 + 信息） ========== */}
@@ -43,26 +43,20 @@ export default function About() {
             <div className="portrait-placeholder">
               <span className="portrait-silhouette">◐</span>
             </div>
-            <span className="portrait-tag">肖像 · 2026</span>
           </div>
 
           {/* —— 右侧：个人文字信息 —— */}
           <div className="profile-info reveal">
 
-            <h3>肖岩 · Xiao Yan</h3>                    {/* 姓名，可直接修改 */}
+            <h3>{t.about.name}</h3>                    {/* 姓名，可直接修改 */}
 
-            <div className="profile-role">3D / 视觉特效 / 动态设计</div>
+            <div className="profile-role">{t.about.role}</div>
             {/* 职位标签，修改此文字可更新职位描述 */}
 
             {/* 个人简介：可增减 <p> 段落 */}
             <div className="profile-bio">
               <p>
-                五年以上三维视觉特效与动态影像创作经验，聚焦广告、短片与品牌视觉项目。
-                擅长从概念设计到最终合成的全流程视觉把控。
-              </p>
-              <p>
-                相信克制的美学与精准的节奏，追求每一帧都经得起推敲的影像质感。
-                目前以独立身份与品牌、创意机构合作。
+                {t.about.bio1}
               </p>
             </div>
 
@@ -71,7 +65,7 @@ export default function About() {
                修改邮件地址：href="mailto:xxx" 和中间的显示文字 */}
             <div className="contact-info single">
               <div data-spotlight data-cursor-hover>
-                <div className="contact-item-label">邮箱</div>
+                <div className="contact-item-label">{t.about.emailLabel}</div>
                 <a href="mailto:xiaoyan_vfx@foxmail.com" className="contact-item-value">
                   xiaoyan_vfx@foxmail.com →
                 </a>
@@ -85,7 +79,7 @@ export default function About() {
         {/* internship = 整段实习经历容器 */}
         <div className="internship reveal">
 
-          <div className="section-label reveal" style={{marginTop: 0}}>实习经历</div>
+          <div className="section-label reveal" style={{marginTop: 0}}>{t.about.internshipLabel}</div>
           {/* 小标题，如需改名可直接改文字 */}
 
           {/* —— 时间线列表容器 —— */}
@@ -94,42 +88,14 @@ export default function About() {
             {/* === 实习条目模板（共 3 条）：复制整块可新增 ===
                 每条包含：时间 + 职位 + 公司 + 描述 */}
 
-            {/* 第 1 条实习 */}
+            {/* 实习条目：2026.04 — 2026.12，字节跳动，三体IP项目
+                职位：公司与职位名称位置互换 */}
             <div className="internship-item" data-spotlight data-cursor-hover>
-              <div className="internship-date">2025.03 — 2025.09</div>
+              <div className="internship-date">{t.about.internshipDate}</div>
               <div className="internship-content">
-                <h4>视觉特效实习生</h4>
-                <div className="internship-company">品牌视觉工作室 · Remote</div>
-                <p>
-                  参与品牌影像广告项目，负责镜头三维特效制作、流体模拟与合成。
-                  协助输出动态分镜、风格帧与成片交付。
-                </p>
-              </div>
-            </div>
-
-            {/* 第 2 条实习 */}
-            <div className="internship-item" data-spotlight data-cursor-hover>
-              <div className="internship-date">2024.06 — 2024.12</div>
-              <div className="internship-content">
-                <h4>动态设计实习生</h4>
-                <div className="internship-company">创意机构 · 上海</div>
-                <p>
-                  独立完成多支品牌短片的动态设计与节奏编排，
-                  参与从概念分镜到最终合成的全流程。
-                </p>
-              </div>
-            </div>
-
-            {/* 第 3 条实习 */}
-            <div className="internship-item" data-spotlight data-cursor-hover>
-              <div className="internship-date">2023.09 — 2024.03</div>
-              <div className="internship-content">
-                <h4>三维渲染实习生</h4>
-                <div className="internship-company">影视后期工作室 · 上海</div>
-                <p>
-                  负责产品级写实渲染、材质调试与灯光布置，
-                  完成多组广告镜头的高质量输出。
-                </p>
+                <h4>{t.about.internshipTitle}</h4>
+                <div className="internship-company">{t.about.internshipRole}</div>
+                <p>{t.about.internshipDesc}</p>
               </div>
             </div>
 
