@@ -36,17 +36,13 @@ export default function Hero({ t }) {
     }
   }, [])
 
-  /* ── 鼠标跟随：更新 Hero 局部 CSS 变量 ── */
+  /* ── 视差：仅更新 --px/--py 供次光斑漂移使用，不覆盖全局 --mx/--my ── */
   useEffect(() => {
     const hero = heroRef.current
     if (!hero) return
 
     const onMove = (e) => {
       const rect = hero.getBoundingClientRect()
-      const x = ((e.clientX - rect.left) / rect.width) * 100
-      const y = ((e.clientY - rect.top) / rect.height) * 100
-      hero.style.setProperty('--mx', x + '%')
-      hero.style.setProperty('--my', y + '%')
       const ox = ((e.clientX - rect.left) / rect.width - 0.5) * 20
       const oy = ((e.clientY - rect.top) / rect.height - 0.5) * 20
       hero.style.setProperty('--px', ox + 'px')
