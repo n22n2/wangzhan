@@ -37,15 +37,15 @@ export default function Advantages({ t }) {
               <span className="adv-icon">
                 {i === 0 && (
                   /* UE5 图标：使用 public/ue.png */
-                  <img src="/ue.png" width="120" height="120" alt="Unreal Engine 5" style={{ objectFit: 'contain' }} />
+                  <img src={`${import.meta.env.BASE_URL}ue.png`} width="120" height="120" alt="Unreal Engine 5" style={{ objectFit: 'contain' }} />
                 )}
                 {i === 1 && (
                   /* Unity 图标：使用 public/Unity.png */
-                  <img src="/Unity.png" width="80" height="80" alt="Unity" style={{ objectFit: 'contain' }} />
+                  <img src={`${import.meta.env.BASE_URL}Unity.png`} width="80" height="80" alt="Unity" style={{ objectFit: 'contain' }} />
                 )}
                 {i === 2 && (
                   /* 3ds Max 图标：使用 public/3ds-max.png */
-                  <img src="/3ds-max.png" width="80" height="80" alt="3ds Max" style={{ objectFit: 'contain' }} />
+                  <img src={`${import.meta.env.BASE_URL}3ds-max.png`} width="80" height="80" alt="3ds Max" style={{ objectFit: 'contain' }} />
                 )}
                 {i > 2 && (
                   /* 通用图标：纯 CSS 符号 ◆ */
