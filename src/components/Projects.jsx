@@ -16,7 +16,8 @@ import { useRef, useEffect, useState } from 'react'
 
 /* 视频资源路径列表，顺序与 translations.projects.items 一一对应
    null = 该项目暂无视频，卡片显示"查看案例"链接 */
-const videoSources = ['/火焰.mp4', '/紫色刀光.mp4']
+const base = import.meta.env.BASE_URL
+const videoSources = [`${base}火焰.mp4`, `${base}紫色刀光.mp4`]
 
 
 /* =======================================================================
