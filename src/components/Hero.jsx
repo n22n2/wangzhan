@@ -76,7 +76,6 @@ export default function Hero({ t }) {
       {/* ── 层 2+：动态装饰层 ── */}
       <div className="hero-orbit hero-orbit-1"  aria-hidden="true" />
       <div className="hero-orbit hero-orbit-2"  aria-hidden="true" />
-      <div className="hero-spotlight"           aria-hidden="true" />
       <div className="hero-spotlight-secondary" aria-hidden="true" />
       <div className="hero-noise"               aria-hidden="true" />
       <div className="hero-grid"                aria-hidden="true" />
